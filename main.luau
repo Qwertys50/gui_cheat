@@ -89,18 +89,24 @@ local function CreateMainContainer(parent, size, position)
 	return frame
 end
 
-local function createAssetButton(frame)
+local function createAssetButton(frame, is_enable)
 	local btn = CreateButton(frame)
 	btn.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
 	btn.TextTransparency = 1
 	btn.AutoButtonColor = false
 	btn.Size = UDim2.new(0, 56, 0, 28)
 
-	local isOn = false
+	local isOn = is_enable
 	local indicator = CreateFrame(btn)
 	indicator.Size = UDim2.new(0.5, 0, 1, 0)
 	indicator.Position = UDim2.new(0, 0, 0, 0)
 	indicator.BackgroundColor3 = Color3.fromRGB(227, 21, 21)
+	
+	if is_enable then
+		
+		indicator.Position = UDim2.new(0.5, 0, 0, 0)
+		indicator.BackgroundColor3 = Color3.fromRGB(56, 182, 18)
+	end
 
 	create_UICorner(UDim.new(0, 3), btn)
 	create_UICorner(UDim.new(0, 3), indicator)
@@ -293,13 +299,13 @@ function module.create_num(name, parent, info_input)
 	return clearBtn, textbox
 end
 
-function module.create_button(name, frame)
+function module.create_button(name, frame, is_enable)
 	local container = CreateFrame(frame)
 	container.AnchorPoint = Vector2.new(0, 0.5)
 	container.Transparency = 1
 	container.Size = UDim2.new(0.885140, 0, 0, 45)
 
-	local btn = createAssetButton(container)
+	local btn = createAssetButton(container, is_enable)
 	btn.Position = UDim2.new(0.85, 0, 0.5, 0)
 	btn.AnchorPoint = Vector2.new(0, 0.5)
 
@@ -314,7 +320,7 @@ function module.create_button(name, frame)
 	return btn
 end
 
-function module.create_vib(name_par, name_sel, all_vib, parent, size_ps)
+function module.create_vib(name_par, name_sel, all_vib, parent, size_ps, is_enable, vib_, color_)
 	local vibs = {}
 	local container = CreateFrame(parent)
 	container.AnchorPoint = Vector2.new(0, 0.5)
@@ -340,6 +346,13 @@ function module.create_vib(name_par, name_sel, all_vib, parent, size_ps)
 
 		local btn = createAsseVibButton(item)
 		btn.Position = UDim2.new(0.919118, 0, 0.147059, 0)
+		
+		if vib_[name] then
+			
+			btn.Frame.BackgroundColor3 = color_
+		else
+			btn.Frame.BackgroundColor3 = Color3.new(0.764706, 0.764706, 0.764706)
+		end
 
 		local label = CreateTextLabel(item)
 		label.Position = UDim2.new(0.026961, 0, 0.176471, 0)
@@ -375,7 +388,7 @@ function module.create_vib(name_par, name_sel, all_vib, parent, size_ps)
 	title.TextScaled = true
 	title.TextXAlignment = Enum.TextXAlignment.Left
 
-	local mainBtn = createAssetButton(container)
+	local mainBtn = createAssetButton(container, is_enable)
 	mainBtn.Position = UDim2.new(0.85, 0, 0, 20)
 	mainBtn.AnchorPoint = Vector2.new(0, 0.5)
 
