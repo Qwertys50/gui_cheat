@@ -44,7 +44,10 @@ local function CreateButton(frame)
 	local btn = Instance.new("TextButton", frame)
 	btn.BorderSizePixel = 0
 	btn.BackgroundColor3 = Color3.new(1, 1, 1)
-	btn.FontFace = Font.fromId(12187375716, Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+	pcall(function()
+		btn.FontFace = Font.fromId(12187375716, Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+	end)
+	
 	btn.TextSize = 14
 	return btn
 end
