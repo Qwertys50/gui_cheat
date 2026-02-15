@@ -442,7 +442,8 @@ function module.create_texts_button_click(name_par, name_sel, all_vib, parent, s
 		item:SetAttribute("id", name)
 
 		local box = CreateTextBox(item)
-		box.Position = UDim2.new(0.919118, 0, 0.147059, 0)
+		box.Position = UDim2.new(0.919118, 0, 0.137059, 0)
+		box.Size = UDim2.new(0, 30, 0, 20)
 
 		local input_event = Instance.new("BindableEvent")
 		events[name] = input_event
