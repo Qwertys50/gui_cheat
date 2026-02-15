@@ -60,6 +60,17 @@ local function CreateTextLabel(parent)
 	return lbl
 end
 
+local function CreateTextBox(parent)
+	local lbl = Instance.new("TextBox", parent)
+	lbl.BorderSizePixel = 0
+	lbl.BackgroundTransparency = 1
+	lbl.BackgroundColor3 = Color3.new(1, 1, 1)
+	lbl.TextColor3 = Color3.new(0, 0, 0)
+	lbl.TextSize = 14
+	lbl.FontFace = Font.fromId(12187375716, Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+	return lbl
+end
+
 local function CreateScrollFrame(name: string, parent, hasList: boolean?)
 	local frame = Instance.new("ScrollingFrame")
 	frame.Name = name
@@ -318,6 +329,62 @@ function module.create_button(name, frame, is_enable)
 	label.TextXAlignment = Enum.TextXAlignment.Left
 
 	return btn
+end
+
+function module.create_text_button(name, frame, is_enable, is_num)
+	local container = CreateFrame(frame)
+	container.AnchorPoint = Vector2.new(0, 0.5)
+	container.Transparency = 1
+	container.Size = UDim2.new(0.885140, 0, 0, 45)
+
+	local input = CreateTextBox(container)
+	input.Position = UDim2.new(0.02, 0, 0.5, 0)
+	input.Size = UDim2.new(0.5, 0, 0.6, 0)
+	input.PlaceholderText = is_num and "Введите число..." or "Введите текст..."
+	input.ClearTextOnFocus = false
+	
+	local input_event = Instance.new("BindableEvent")
+	
+	-- Функция проверки и отправки значения
+	local function validateAndFire(text)
+		if is_num then
+			local num = tonumber(text)
+			if num then
+				input_event:Fire(num)
+				input.BackgroundColor = Color3.new(1, 1, 1)
+			else
+				input.BackgroundColor = Color3.new(1, 0.239215, 0.239215)
+			end
+		else
+			input_event:Fire(text)
+		end
+	end
+	
+	input.FocusLost:Connect(function(enterPressed)
+		if enterPressed then
+			validateAndFire(input.Text)
+		end
+	end)
+	
+	input.Changed:Connect(function(property)
+		if property == "Text" and is_num then
+			input.BackgroundColor = Color3.new(1, 1, 1)
+		end
+	end)
+
+	local btn = createAssetButton(container, is_enable)
+	btn.Position = UDim2.new(0.85, 0, 0.5, 0)
+	btn.AnchorPoint = Vector2.new(0, 0.5)
+
+	local label = CreateTextLabel(container)
+	label.Position = UDim2.new(0.02, 0, 0.1, 0)
+	label.Size = UDim2.new(0.706, 0, 0.3, 0)
+	label.Text = name
+	label.TextScaled = true
+	label.RichText = true
+	label.TextXAlignment = Enum.TextXAlignment.Left
+
+	return btn, input_event
 end
 
 function module.create_vib(name_par, name_sel, all_vib, parent, size_ps, is_enable, vib_, color_)
