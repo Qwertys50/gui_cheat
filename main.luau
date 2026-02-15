@@ -341,6 +341,7 @@ function module.create_text_button(name, frame, is_enable, is_num)
 	input.Position = UDim2.new(0.350000024, 0, 0.5, 0)
 	input.AnchorPoint = Vector2.new(0, 0.5)
 	input.Size = UDim2.new(0.5, 0, 0.6, 0)
+	input.Text = ""
 	input.PlaceholderText = is_num and "Введите число..." or "Введите текст..."
 	input.ClearTextOnFocus = false
 	
