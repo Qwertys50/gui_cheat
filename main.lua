@@ -338,7 +338,8 @@ function module.create_text_button(name, frame, is_enable, is_num)
 	container.Size = UDim2.new(0.885140, 0, 0, 45)
 
 	local input = CreateTextBox(container)
-	input.Position = UDim2.new(0.02, 0, 0.5, 0)
+	input.Position = UDim2.new(0.350000024, 0, 0.5, 0)
+	input.AnchorPoint = Vector2.new(0, 0.5)
 	input.Size = UDim2.new(0.5, 0, 0.6, 0)
 	input.PlaceholderText = is_num and "Введите число..." or "Введите текст..."
 	input.ClearTextOnFocus = false
@@ -377,8 +378,9 @@ function module.create_text_button(name, frame, is_enable, is_num)
 	btn.AnchorPoint = Vector2.new(0, 0.5)
 
 	local label = CreateTextLabel(container)
-	label.Position = UDim2.new(0.02, 0, 0.1, 0)
+	label.Position = UDim2.new(0.02, 0, 0.5, 0)
 	label.Size = UDim2.new(0.706, 0, 0.3, 0)
+	label.AnchorPoint = Vector2.new(0, 0.5)
 	label.Text = name
 	label.TextScaled = true
 	label.RichText = true
