@@ -340,7 +340,7 @@ function module.create_button2(name, frame, is_enable)
 	container.Transparency = 1
 	container.Size = UDim2.new(0.885140, 0, 0, 45)
 
-	local btn = createAssetButton(container, is_enable)
+	local btn = createAsseVibButton(container)
 	btn.Position = UDim2.new(0.85, 0, 0.5, 0)
 	btn.AnchorPoint = Vector2.new(0, 0.5)
 
@@ -356,7 +356,7 @@ function module.create_button2(name, frame, is_enable)
 end
 
 function module.create_text_button(name, frame, is_enable, is_num)
-	local container = createAssetButton(frame, false)
+	local container = CreateFrame(frame)
 	container.AnchorPoint = Vector2.new(0, 0.5)
 	container.Transparency = 1
 	container.Size = UDim2.new(0.885140, 0, 0, 45)
