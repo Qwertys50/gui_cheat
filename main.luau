@@ -371,7 +371,6 @@ function module.create_text_button(name, frame, is_enable, is_num)
 	
 	local input_event = Instance.new("BindableEvent")
 	
-	-- Функция проверки и отправки значения
 	local function validateAndFire(text)
 		if is_num then
 			local num = tonumber(text)
@@ -444,6 +443,7 @@ function module.create_texts_button_click(name_par, name_sel, all_vib, parent, s
 		local box = CreateTextBox(item)
 		box.Position = UDim2.new(0.919118, 0, 0.137059, 0)
 		box.Size = UDim2.new(0, 30, 0, 20)
+		size_ps += box.AbsoluteSize.Y
 
 		local input_event = Instance.new("BindableEvent")
 		events[name] = input_event
