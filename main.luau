@@ -443,6 +443,7 @@ function module.create_texts_button_click(name_par, name_sel, all_vib, parent, s
 		local box = CreateTextBox(item)
 		box.Position = UDim2.new(0.919118, 0, 0.137059, 0)
 		box.Size = UDim2.new(0, 30, 0, 20)
+		box.ZIndex = 20
 
 		box.Text = "..."
 		if is_num then
