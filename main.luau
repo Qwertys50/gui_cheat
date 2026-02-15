@@ -446,7 +446,7 @@ function module.create_texts_button_click(name_par, name_sel, all_vib, parent, s
 
 		box.Text = "..."
 		if is_num then
-			box.Text = "0"
+			box.Text = "0" end
 		size_ps += box.AbsoluteSize.Y
 
 		local input_event = Instance.new("BindableEvent")
