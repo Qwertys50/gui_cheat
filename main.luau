@@ -414,6 +414,102 @@ function module.create_text_button(name, frame, is_enable, is_num)
 	return btn, input_event
 end
 
+function module.create_texts_button_click(name_par, name_sel, all_vib, parent, size_ps, is_num)
+
+	local events = {}
+
+	local vibs = {}
+	local container = CreateFrame(parent)
+	container.AnchorPoint = Vector2.new(0, 0.5)
+	container.Position = UDim2.new(0.057430, 0, 0.113133, 0)
+	container.Size = UDim2.new(0.885, 0, 0, 96)
+
+	create_UICorner(UDim.new(0, 8), container)
+
+	local scrollFrame = CreateScrollFrame("VibScroller", container)
+	scrollFrame.Position = UDim2.new(0.02, 0, 0.485, 0)
+	scrollFrame.Size = UDim2.new(0.96, 0, 0.417 + size_ps, 0)
+	scrollFrame.Visible = false
+	scrollFrame.ZIndex = 10
+	scrollFrame.ScrollBarThickness = 12
+
+	create_UIList(UDim.new(0.001, 0), Enum.HorizontalAlignment.Center, scrollFrame)
+
+	for name, _ in pairs(all_vib) do
+		local item = CreateFrame(scrollFrame)
+		item.Size = UDim2.new(0.839, 0, 0, 29)
+		item.BackgroundColor3 = Color3.new(0.945098, 0.945098, 0.945098)
+		item:SetAttribute("id", name)
+
+		local box = CreateTextBox(item)
+		box.Position = UDim2.new(0.919118, 0, 0.147059, 0)
+
+		local input_event = Instance.new("BindableEvent")
+		events[name] = input_event
+			
+		local function validateAndFire(text)
+			if is_num then
+				local num = tonumber(text)
+				if num then
+					input_event:Fire(num)
+					box.BackgroundColor = Color3.new(1, 1, 1)
+				else
+					box.BackgroundColor = Color3.new(1, 0.239215, 0.239215)
+				end
+			else
+				input_event:Fire(text)
+			end
+		end
+		
+		box.FocusLost:Connect(function(enterPressed)
+			if enterPressed then
+				validateAndFire(box.Text)
+			end
+		end)
+		
+
+		local label = CreateTextLabel(item)
+		label.Position = UDim2.new(0.026961, 0, 0.176471, 0)
+		label.Size = UDim2.new(0.360294, 0, 0.617647, 0)
+		label.Text = name
+		label.TextScaled = true
+
+		table.insert(vibs, item)
+	end
+
+	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, scrollFrame.UIListLayout.AbsoluteContentSize.Y)
+
+	local toggleBtn = Instance.new("TextButton", container)
+	toggleBtn.AnchorPoint = Vector2.new(0, 0.5)
+	toggleBtn.Position = UDim2.new(0.02, 0, 0, 55)
+	toggleBtn.Size = UDim2.new(0.959, 0, 0, 16)
+	toggleBtn.BackgroundColor3 = Color3.new(0, 0, 0)
+	toggleBtn.Text = name_sel
+	toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+	toggleBtn.TextScaled = true
+
+	toggleBtn.MouseButton1Up:Connect(function()
+		local isOpen = toggleBtn.Text ~= name_sel
+		scrollFrame.Visible = not isOpen
+		container.Size = UDim2.new(0.885, 0, 0, isOpen and 70 or 140 + size_ps)
+		toggleBtn.Text = isOpen and name_sel or "Close"
+	end)
+	
+	local title = CreateTextLabel(container)
+	title.Position = UDim2.new(0.019985, 0, 0, 10)
+	title.Size = UDim2.new(0.492640, 0, 0, 18)
+	title.Text = name_par
+	title.TextScaled = true
+	title.TextXAlignment = Enum.TextXAlignment.Left
+
+	local mainBtn = createAsseVibButton(container)
+	mainBtn.Position = UDim2.new(0.85, 0, 0, 20)
+	mainBtn.AnchorPoint = Vector2.new(0, 0.5)
+
+	return vibs, mainBtn, events
+end
+
+
 function module.create_vib(name_par, name_sel, all_vib, parent, size_ps, is_enable, vib_, color_)
 	local vibs = {}
 	local container = CreateFrame(parent)
