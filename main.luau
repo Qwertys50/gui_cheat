@@ -334,8 +334,29 @@ function module.create_button(name, frame, is_enable)
 	return btn
 end
 
-function module.create_text_button(name, frame, is_enable, is_num)
+function module.create_button2(name, frame, is_enable)
 	local container = CreateFrame(frame)
+	container.AnchorPoint = Vector2.new(0, 0.5)
+	container.Transparency = 1
+	container.Size = UDim2.new(0.885140, 0, 0, 45)
+
+	local btn = createAssetButton(container, is_enable)
+	btn.Position = UDim2.new(0.85, 0, 0.5, 0)
+	btn.AnchorPoint = Vector2.new(0, 0.5)
+
+	local label = CreateTextLabel(container)
+	label.Position = UDim2.new(0.02, 0, 0.27, 0)
+	label.Size = UDim2.new(0.706, 0, 0.444444, 0)
+	label.Text = name
+	label.TextScaled = true
+	label.RichText = true
+	label.TextXAlignment = Enum.TextXAlignment.Left
+
+	return btn
+end
+
+function module.create_text_button(name, frame, is_enable, is_num)
+	local container = createAssetButton(frame, false)
 	container.AnchorPoint = Vector2.new(0, 0.5)
 	container.Transparency = 1
 	container.Size = UDim2.new(0.885140, 0, 0, 45)
