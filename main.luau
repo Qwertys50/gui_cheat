@@ -426,7 +426,7 @@ function module.create_texts_button_click(name_par, name_sel, all_vib, parent, s
 	create_UICorner(UDim.new(0, 8), container)
 
 	local scrollFrame = CreateScrollFrame("VibScroller", container)
-	scrollFrame.Position = UDim2.new(0.02, 0, 0.485, 0)
+	scrollFrame.Position = UDim2.new(0.02, 0, 0.315, 0)
 	scrollFrame.Size = UDim2.new(0.96, 0, 0.417 + size_ps, 0)
 	scrollFrame.Visible = false
 	scrollFrame.ZIndex = 10
@@ -492,7 +492,7 @@ function module.create_texts_button_click(name_par, name_sel, all_vib, parent, s
 	toggleBtn.MouseButton1Up:Connect(function()
 		local isOpen = toggleBtn.Text ~= name_sel
 		scrollFrame.Visible = not isOpen
-		container.Size = UDim2.new(0.885, 0, 0, isOpen and 70 or 140 + size_ps)
+		container.Size = UDim2.new(0.885, 0, 0, isOpen and 70 or 120 + size_ps)
 		toggleBtn.Text = isOpen and name_sel or "Close"
 	end)
 	
