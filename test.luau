@@ -405,7 +405,7 @@ function lib:init(ti, dosplash, visiblekey, deleteprevious)
     notiftitle.Position = UDim2.new(0.167763159, 0, 0.375690609, 0)
     notiftitle.Size = UDim2.new(0, 200, 0, 50)
     notiftitle.ZIndex = 3
-    notiftitle.Font = Enum.Font.UbuntuMedium
+    notiftitle.Font = Enum.Font.Ubuntu
     notiftitle.Text = "Notice"
     notiftitle.TextColor3 = Color3.fromRGB(255, 255, 255)
     notiftitle.TextSize = 28
@@ -458,7 +458,7 @@ function lib:init(ti, dosplash, visiblekey, deleteprevious)
     notif2title.Position = UDim2.new(0.167763159, 0, 0.375690609, 0)
     notif2title.Size = UDim2.new(0, 200, 0, 50)
     notif2title.ZIndex = 3
-    notif2title.Font = Enum.Font.UbuntuMedium
+    notif2title.Font = Enum.Font.Ubuntu
     notif2title.Text = "Notice"
     notif2title.TextColor3 = Color3.fromRGB(255, 255, 255)
     notif2title.TextSize = 28
@@ -622,7 +622,7 @@ function lib:init(ti, dosplash, visiblekey, deleteprevious)
         t1.Position = UDim2.new(0.234690696, 0, 0.193464488, 0)
         t1.Size = UDim2.new(0, 327, 0, 25)
         t1.ZIndex = 4
-        t1.Font = Enum.Font.UbuntuMedium
+        t1.Font = Enum.Font.Ubuntu
         t1.Text = text1
         t1.TextColor3 = Color3.fromRGB(255, 255, 255)
         t1.TextSize = 28
