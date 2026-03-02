@@ -235,7 +235,6 @@ function module.create_starter(parent)
 
 	return mainFrame, homeFrame, scrollFrame, {Main = scrollFrame, Home = homeFrame}, navBar
 end
-
 function module.createClosed(parent, home:Frame)
 
 	local btn = CreateImageButton(parent)
@@ -247,9 +246,9 @@ function module.createClosed(parent, home:Frame)
 	local dragInput = nil
 	local dragStart = nil
 	local startPos = nil
+	local userInputService = game:GetService("UserInputService")
 
 	home:GetPropertyChangedSignal("AbsolutePosition"):Connect(function()
-		
 		if not dragging then
 			print(home.AbsolutePosition.X)
 			btn.Position = UDim2.new(0, home.AbsolutePosition.X + 3, 0, home.AbsolutePosition.Y + 3)
@@ -265,37 +264,72 @@ function module.createClosed(parent, home:Frame)
 		btn.Position = newPos
 	end
 
-	btn.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+	-- Обработка начала касания/нажатия
+	local function onInputBegan(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+		   input.UserInputType == Enum.UserInputType.Touch then
 			dragging = true
 			dragStart = input.Position
 			startPos = btn.Position
-
+			
+			-- Блокируем прокрутку родительского элемента на мобильных устройствах
+			if input.UserInputType == Enum.UserInputType.Touch then
+				local success, connection = pcall(function()
+					return parent.ScrollingEnabled = false
+				end)
+			end
+			
 			input.Changed:Connect(function()
 				if input.UserInputState == Enum.UserInputState.End then
 					dragging = false
 				end
 			end)
 		end
-	end)
+	end
 
+	-- Обработка движения
+	local function onInputChanged(input)
+		if (input.UserInputType == Enum.UserInputType.MouseMovement or 
+		    input.UserInputType == Enum.UserInputType.Touch) and dragging then
+			updatePosition(input)
+		end
+	end
+
+	-- Подключаем события для мыши и касания
+	btn.InputBegan:Connect(onInputBegan)
 	btn.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement then
+		if input.UserInputType == Enum.UserInputType.MouseMovement or
+		   input.UserInputType == Enum.UserInputType.Touch then
 			dragInput = input
 		end
 	end)
 
-	game:GetService("UserInputService").InputChanged:Connect(function(input)
-		if input == dragInput and dragging then
+	-- Глобальный обработчик движения
+	userInputService.InputChanged:Connect(function(input)
+		if (input == dragInput or input.UserInputType == Enum.UserInputType.Touch) and dragging then
 			updatePosition(input)
 		end
 	end)
+
+	-- Обработка окончания касания
+	local function onInputEnded(input)
+		if (input.UserInputType == Enum.UserInputType.MouseButton1 or 
+		    input.UserInputType == Enum.UserInputType.Touch) and dragging then
+			dragging = false
+			
+			-- Разблокируем прокрутку
+			local success, connection = pcall(function()
+				return parent.ScrollingEnabled = true
+			end)
+		end
+	end
+
+	userInputService.InputEnded:Connect(onInputEnded)
 
 	local is_visible = true
 	local visibleStates = {}
 
 	btn.MouseButton1Up:Connect(function()
-		
 		if not dragging then
 			if is_visible then
 
@@ -347,6 +381,14 @@ function module.createClosed(parent, home:Frame)
 			is_visible = not is_visible
 		end
 		dragging = false
+	end)
+	
+	-- Также добавим обработку касания для клика (на случай если MouseButton1Up не работает на мобильных)
+	btn.TouchEnded:Connect(function()
+		if not dragging then
+			-- Имитируем клик
+			btn.MouseButton1Up:Fire()
+		end
 	end)
 end
 
