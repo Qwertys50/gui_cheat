@@ -23,6 +23,7 @@ local function create_UIList(padding: UDim, align: Enum.HorizontalAlignment, par
 	return list
 end
 
+
 local function create_UICorner(radius: UDim, parent)
 	local corner = Instance.new("UICorner", parent)
 	corner.CornerRadius = radius
@@ -47,8 +48,19 @@ local function CreateButton(frame)
 	pcall(function()
 		btn.FontFace = Font.fromId(12187375716, Enum.FontWeight.Bold, Enum.FontStyle.Normal)
 	end)
-	
+
 	btn.TextSize = 14
+	return btn
+end
+
+local function CreateImageButton(frame)
+	local btn = Instance.new("ImageButton", frame)
+	btn.BorderSizePixel = 0
+	btn.BackgroundColor3 = Color3.new(1, 1, 1)
+	btn.AutoButtonColor = false
+	
+	btn.Image = "rbxassetid://94540935178190"
+	
 	return btn
 end
 
@@ -99,7 +111,7 @@ local function CreateMainContainer(parent, size, position)
 	local frame = CreateFrame(parent)
 	frame.AnchorPoint = Vector2.new(0.5, 0.5)
 	frame.Position = position or UDim2.new(0.5, 0, 0.5, 0)
-	frame.Size = size or UDim2.new(0.683844, 0, 0.610638, 0)
+	frame.Size = size or UDim2.new(0, 500, 0, 300)
 	return frame
 end
 
@@ -115,9 +127,9 @@ local function createAssetButton(frame, is_enable)
 	indicator.Size = UDim2.new(0.5, 0, 1, 0)
 	indicator.Position = UDim2.new(0, 0, 0, 0)
 	indicator.BackgroundColor3 = Color3.fromRGB(227, 21, 21)
-	
+
 	if is_enable then
-		
+
 		indicator.Position = UDim2.new(0.5, 0, 0, 0)
 		indicator.BackgroundColor3 = Color3.fromRGB(56, 182, 18)
 	end
@@ -163,6 +175,14 @@ function module.create_starter(parent)
 	scrollFrame.Position = UDim2.new(0.016293, 0, 0.045296, 0)
 	scrollFrame.Size = UDim2.new(0.967413, 0, 0.905923, 0)
 
+	local resize = CreateFrame(mainFrame)
+	resize.Position = UDim2.new(0, 0, 0, 0)
+	resize.Size = UDim2.new(0.967413, 0, 0.905923, 0)
+	resize.Name = "Resize"
+	resize.Visible = false
+	create_UICorner(UDim.new(0, 8), resize)
+
+	
 	local homeFrame = CreateFrame(mainFrame)
 	homeFrame.BackgroundTransparency = 1
 	homeFrame.Position = UDim2.new(0.016293, 0, 0.045296, 0)
@@ -214,6 +234,120 @@ function module.create_starter(parent)
 	end)
 
 	return mainFrame, homeFrame, scrollFrame, {Main = scrollFrame, Home = homeFrame}, navBar
+end
+
+function module.createClosed(parent, home:Frame)
+
+	local btn = CreateImageButton(parent)
+	btn.Size = UDim2.new(0, 45, 0, 45)
+	btn.Position = UDim2.new(0, home.AbsolutePosition.X + 3, 0, home.AbsolutePosition.Y + 3)
+	create_UICorner(UDim.new(0, 8), btn)
+
+	local dragging = false
+	local dragInput = nil
+	local dragStart = nil
+	local startPos = nil
+
+	home:GetPropertyChangedSignal("AbsolutePosition"):Connect(function()
+		
+		if not dragging then
+			print(home.AbsolutePosition.X)
+			btn.Position = UDim2.new(0, home.AbsolutePosition.X + 3, 0, home.AbsolutePosition.Y + 3)
+		end
+	end)
+
+	local function updatePosition(input)
+		local delta = input.Position - dragStart
+		local newPos = UDim2.new(
+			0, startPos.X.Offset + delta.X,
+			0, startPos.Y.Offset + delta.Y
+		)
+		btn.Position = newPos
+	end
+
+	btn.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = true
+			dragStart = input.Position
+			startPos = btn.Position
+
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+
+	btn.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			dragInput = input
+		end
+	end)
+
+	game:GetService("UserInputService").InputChanged:Connect(function(input)
+		if input == dragInput and dragging then
+			updatePosition(input)
+		end
+	end)
+
+	local is_visible = true
+	local visibleStates = {}
+
+	btn.MouseButton1Up:Connect(function()
+		
+		if not dragging then
+			if is_visible then
+
+				home.Transparency = 1
+
+				for _, i in ipairs(home:GetChildren()) do
+					if (i:IsA("Frame") or i:IsA("ScrollingFrame")) and i.Name ~= "Resize" then
+						visibleStates[i] = i.Visible
+						i.Visible = false
+					end
+				end
+
+				home.Resize.Visible = true
+				local targetSize = UDim2.new(0, btn.AbsoluteSize.X, 0, btn.AbsoluteSize.Y)
+				local tween = game:GetService("TweenService"):Create(
+					home.Resize,
+					TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+					{Size = targetSize}
+				)
+				tween:Play()
+
+				tween.Completed:Connect(function()
+					home.Resize.Visible = false
+				end)
+
+			else
+				home.Resize.Visible = true
+				local originalSize = UDim2.new(0.967413, 0, 0.905923, 0)
+				local tween = game:GetService("TweenService"):Create(
+					home.Resize,
+					TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+					{Size = originalSize}
+				)
+				tween:Play()
+
+				tween.Completed:Wait()
+
+				home.Resize.Visible = false
+				home.Transparency = 0
+
+				for _, i in ipairs(home:GetChildren()) do
+					if visibleStates[i] ~= nil then
+						i.Visible = visibleStates[i]
+					end
+				end
+				visibleStates = {}
+			end
+
+			is_visible = not is_visible
+		end
+		dragging = false
+	end)
 end
 
 function module.create_home(game_name, parent)
@@ -368,9 +502,9 @@ function module.create_text_button(name, frame, is_enable, is_num)
 	input.Text = ""
 	input.PlaceholderText = is_num and "Введите число..." or "Введите текст..."
 	input.ClearTextOnFocus = false
-	
+
 	local input_event = Instance.new("BindableEvent")
-	
+
 	local function validateAndFire(text)
 		if is_num then
 			local num = tonumber(text)
@@ -384,13 +518,13 @@ function module.create_text_button(name, frame, is_enable, is_num)
 			input_event:Fire(text)
 		end
 	end
-	
+
 	input.FocusLost:Connect(function(enterPressed)
 		if enterPressed then
 			validateAndFire(input.Text)
 		end
 	end)
-	
+
 	input.Changed:Connect(function(property)
 		if property == "Text" and is_num then
 			input.BackgroundColor = Color3.new(1, 1, 1)
@@ -452,7 +586,7 @@ function module.create_texts_button_click(name_par, name_sel, all_vib, parent, s
 
 		local input_event = Instance.new("BindableEvent")
 		events[name] = {event=input_event, input=box}
-			
+
 		local function validateAndFire(text)
 			if is_num then
 				local num = tonumber(text)
@@ -463,13 +597,13 @@ function module.create_texts_button_click(name_par, name_sel, all_vib, parent, s
 				input_event:Fire(text)
 			end
 		end
-		
+
 		box.FocusLost:Connect(function(enterPressed)
 			if enterPressed then
 				validateAndFire(box.Text)
 			end
 		end)
-		
+
 
 		local label = CreateTextLabel(item)
 		label.Position = UDim2.new(0.026961, 0, 0.176471, 0)
@@ -497,7 +631,7 @@ function module.create_texts_button_click(name_par, name_sel, all_vib, parent, s
 		container.Size = UDim2.new(0.885, 0, 0, isOpen and 70 or 120 + size_ps)
 		toggleBtn.Text = isOpen and name_sel or "Close"
 	end)
-	
+
 	local title = CreateTextLabel(container)
 	title.Position = UDim2.new(0.019985, 0, 0, 10)
 	title.Size = UDim2.new(0.492640, 0, 0, 18)
@@ -539,9 +673,9 @@ function module.create_vib(name_par, name_sel, all_vib, parent, size_ps, is_enab
 
 		local btn = createAsseVibButton(item)
 		btn.Position = UDim2.new(0.919118, 0, 0.147059, 0)
-		
+
 		if vib_[name] then
-			
+
 			btn.Frame.BackgroundColor3 = color_
 		else
 			btn.Frame.BackgroundColor3 = Color3.new(0.764706, 0.764706, 0.764706)
