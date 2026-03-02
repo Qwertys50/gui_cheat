@@ -111,7 +111,7 @@ local function CreateMainContainer(parent, size, position)
 	local frame = CreateFrame(parent)
 	frame.AnchorPoint = Vector2.new(0.5, 0.5)
 	frame.Position = position or UDim2.new(0.5, 0, 0.5, 0)
-	frame.Size = size or UDim2.new(0, 500, 0, 300)
+	frame.Size = size or UDim2.new(0.683844, 0, 0.610638, 0)
 	return frame
 end
 
@@ -247,9 +247,9 @@ function module.createClosed(parent, home:Frame)
 	local dragInput = nil
 	local dragStart = nil
 	local startPos = nil
+	local touchId = nil -- Для отслеживания конкретного касания
 
 	home:GetPropertyChangedSignal("AbsolutePosition"):Connect(function()
-		
 		if not dragging then
 			print(home.AbsolutePosition.X)
 			btn.Position = UDim2.new(0, home.AbsolutePosition.X + 3, 0, home.AbsolutePosition.Y + 3)
@@ -257,7 +257,14 @@ function module.createClosed(parent, home:Frame)
 	end)
 
 	local function updatePosition(input)
-		local delta = input.Position - dragStart
+		local delta: Vector2
+		if input.UserInputType == Enum.UserInputType.Touch then
+			-- Для сенсорного ввода используем Position
+			delta = input.Position - dragStart
+		else
+			delta = input.Position - dragStart
+		end
+
 		local newPos = UDim2.new(
 			0, startPos.X.Offset + delta.X,
 			0, startPos.Y.Offset + delta.Y
@@ -265,29 +272,57 @@ function module.createClosed(parent, home:Frame)
 		btn.Position = newPos
 	end
 
+	-- Обработка начала касания/нажатия
 	btn.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+			input.UserInputType == Enum.UserInputType.Touch then
 			dragging = true
 			dragStart = input.Position
 			startPos = btn.Position
 
+			if input.UserInputType == Enum.UserInputType.Touch then
+				touchId = input.KeyCode -- Уникальный ID касания
+			end
+
 			input.Changed:Connect(function()
 				if input.UserInputState == Enum.UserInputState.End then
 					dragging = false
+					touchId = nil
 				end
 			end)
 		end
 	end)
 
+	-- Обработка движения
 	btn.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement then
+		if input.UserInputType == Enum.UserInputType.MouseMovement or
+			input.UserInputType == Enum.UserInputType.Touch then
 			dragInput = input
 		end
 	end)
 
-	game:GetService("UserInputService").InputChanged:Connect(function(input)
+	-- Глобальная обработка движения
+	local userInputService = game:GetService("UserInputService")
+	userInputService.InputChanged:Connect(function(input, processed)
 		if input == dragInput and dragging then
-			updatePosition(input)
+			-- Для сенсорного ввода проверяем, что это то же касание
+			if input.UserInputType == Enum.UserInputType.Touch then
+				if input.KeyCode == touchId then
+					updatePosition(input)
+				end
+			else
+				updatePosition(input)
+			end
+		end
+	end)
+
+	-- Дополнительная обработка для сенсорного ввода
+	userInputService.TouchEnded:Connect(function(touchPositions, processed)
+		if dragging then
+			-- Небольшая задержка для проверки, было ли это перетаскивание или нажатие
+			task.wait(0.1)
+			dragging = false
+			touchId = nil
 		end
 	end)
 
@@ -295,7 +330,9 @@ function module.createClosed(parent, home:Frame)
 	local visibleStates = {}
 
 	btn.MouseButton1Up:Connect(function()
-		
+		-- Небольшая задержка для мобильных устройств
+		task.wait(0.05)
+
 		if not dragging then
 			if is_visible then
 
@@ -347,6 +384,15 @@ function module.createClosed(parent, home:Frame)
 			is_visible = not is_visible
 		end
 		dragging = false
+		touchId = nil
+	end)
+
+	-- Также обрабатываем TouchTap для мобильных устройств
+	btn.TouchTap:Connect(function(touchPositions)
+		if not dragging then
+			-- Имитируем нажатие кнопки
+			btn.MouseButton1Up:Fire()
+		end
 	end)
 end
 
