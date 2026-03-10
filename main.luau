@@ -394,6 +394,8 @@ function module.createClosed(parent, home:Frame)
 			btn.MouseButton1Up:Fire()
 		end
 	end)
+
+	return btn
 end
 
 function module.create_home(game_name, parent)
