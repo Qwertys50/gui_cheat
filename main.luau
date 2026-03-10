@@ -693,7 +693,7 @@ function module.create_texts_button_click(name_par, name_sel, all_vib, parent, s
 end
 
 
-function module.create_vib(name_par, name_sel, all_vib, parent, size_ps, is_enable, vib_, color_)
+function module.create_vib(name_par, name_sel, all_vib, parent, size_ps, is_enable, vib_, color_, is_toogle: false)
 	local vibs = {}
 	local container = CreateFrame(parent)
 	container.AnchorPoint = Vector2.new(0, 0.5)
@@ -761,10 +761,19 @@ function module.create_vib(name_par, name_sel, all_vib, parent, size_ps, is_enab
 	title.TextScaled = true
 	title.TextXAlignment = Enum.TextXAlignment.Left
 
-	local mainBtn = createAssetButton(container, is_enable)
-	mainBtn.Position = UDim2.new(0.85, 0, 0, 20)
-	mainBtn.AnchorPoint = Vector2.new(0, 0.5)
+    local mainBtn
 
+    if not is_toogle then
+
+        mainBtn = createAssetButton(container, is_enable)
+        mainBtn.Position = UDim2.new(0.85, 0, 0, 20)
+        mainBtn.AnchorPoint = Vector2.new(0, 0.5)
+    else
+            
+        mainBtn = createAsseVibButton(container)
+        mainBtn.Position = UDim2.new(0.85, 0, 0, 20)
+        mainBtn.AnchorPoint = Vector2.new(0, 0.5)
+    end
 	return vibs, mainBtn
 end
 
