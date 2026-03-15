@@ -9,7 +9,8 @@ local Settings = {
     Tracer_Thickness = 1,
     Tracer_Origin = "Bottom",
     Tracer_FollowMouse = false,
-    Tracers = true
+    Tracers = true,
+    ShowDistance = true
 }
 
 local function NewLine(thickness, color)
@@ -21,6 +22,20 @@ local function NewLine(thickness, color)
     line.Thickness = thickness
     line.Transparency = 1
     return line
+end
+
+local function NewText()
+    local text = Drawing.new("Text")
+    text.Visible = false
+    text.Text = ""
+    text.Size = 24
+    text.Color = Color3.new(1, 1, 1)
+    text.Outline = true
+    text.OutlineColor = Color3.new(1, 1, 1)
+    text.Center = true
+    text.Position = Vector2.new(0, 0)
+    text.Transparency = 1
+    return text
 end
 
 local function Visibility(state, lib)
@@ -58,6 +73,7 @@ function ESPModule.new(target, color)
     local library = {
         blacktracer = NewLine(Settings.Tracer_Thickness * 2, Color3.new(0, 0, 0)),
         tracer = NewLine(Settings.Tracer_Thickness, color or Settings.Tracer_Color),
+        distanceText = NewText()
     }
     
     local connection
@@ -69,13 +85,16 @@ function ESPModule.new(target, color)
         end
         
         local rootPart = GetRootPart(target)
+        local playerRoot = GetRootPart(player.Character)
         
-        if rootPart and rootPart.Parent then
+        if rootPart and rootPart.Parent and playerRoot and playerRoot.Parent then
             local humPos, onScreen = camera:WorldToViewportPoint(rootPart.Position)
             
             if onScreen then
+                local distance = (rootPart.Position - playerRoot.Position).Magnitude
+                local distanceText = string.format("%.1f studs", distance)
+                
                 if Settings.Tracers then
-                    -- Set origin
                     if Settings.Tracer_FollowMouse then
                         library.tracer.From = Vector2.new(mouse.X, mouse.Y + 36)
                         library.blacktracer.From = Vector2.new(mouse.X, mouse.Y + 36)
@@ -87,11 +106,17 @@ function ESPModule.new(target, color)
                         library.blacktracer.From = Vector2.new(camera.ViewportSize.X * 0.5, camera.ViewportSize.Y)
                     end
                     
-                    -- Set target
                     library.tracer.To = Vector2.new(humPos.X, humPos.Y)
                     library.blacktracer.To = Vector2.new(humPos.X, humPos.Y)
                     
                     library.tracer.Color = color or Settings.Tracer_Color
+                    
+                    if Settings.ShowDistance then
+                        library.distanceText.Text = distanceText
+                        library.distanceText.Position = Vector2.new(humPos.X, humPos.Y - 30)
+                        library.distanceText.Color = color or Settings.Tracer_Color
+                        library.distanceText.Size = 16
+                    end
                     
                     Visibility(true, library)
                 end
@@ -111,8 +136,17 @@ function ESPModule.new(target, color)
             for _, element in pairs(library) do
                 element:Remove()
             end
+        end,
+        
+        setShowDistance = function(show)
+            Settings.ShowDistance = show
+            if not show then
+                library.distanceText.Visible = false
+            end
+        end,
+        
+        setDistanceTextSize = function(size)
+            library.distanceText.Size = size
         end
     }
 end
-
-return ESPModule
