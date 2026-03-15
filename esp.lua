@@ -150,3 +150,4 @@ function ESPModule.new(target, color)
         end
     }
 end
+return ESPModule
