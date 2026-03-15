@@ -1,16 +1,16 @@
 local ESPModule = {}
 
-local defaultSettings = {
+local player = game:GetService("Players").LocalPlayer
+local camera = game:GetService("Workspace").CurrentCamera
+local mouse = player:GetMouse()
+
+local Settings = {
     Tracer_Color = Color3.fromRGB(255, 0, 0),
     Tracer_Thickness = 1,
     Tracer_Origin = "Bottom",
     Tracer_FollowMouse = false,
     Tracers = true
 }
-
-local player = game:GetService("Players").LocalPlayer
-local camera = game:GetService("Workspace").CurrentCamera
-local mouse = player:GetMouse()
 
 local function NewLine(thickness, color)
     local line = Drawing.new("Line")
@@ -54,91 +54,64 @@ local function GetRootPart(obj)
     return nil
 end
 
-function ESPModule.new(target, customSettings)
-    local settings = {}
-    for k, v in pairs(defaultSettings) do
-        settings[k] = customSettings and customSettings[k] or v
-    end
-    
+function ESPModule.new(target, color)
     local library = {
-        blacktracer = NewLine(settings.Tracer_Thickness * 2, Color3.new(0, 0, 0)),
-        tracer = NewLine(settings.Tracer_Thickness, settings.Tracer_Color),
+        blacktracer = NewLine(Settings.Tracer_Thickness * 2, Color3.new(0, 0, 0)),
+        tracer = NewLine(Settings.Tracer_Thickness, color or Settings.Tracer_Color),
     }
     
     local connection
-    local function start()
-        if connection then
-            connection:Disconnect()
+    connection = game:GetService("RunService").RenderStepped:Connect(function()
+        if not target or not target.Parent then
+            Visibility(false, library)
+            if connection then connection:Disconnect() end
+            return
         end
         
-        connection = game:GetService("RunService").RenderStepped:Connect(function()
-            if not target or not target.Parent then
-                Visibility(false, library)
-                return
-            end
+        local rootPart = GetRootPart(target)
+        
+        if rootPart and rootPart.Parent then
+            local humPos, onScreen = camera:WorldToViewportPoint(rootPart.Position)
             
-            local rootPart = GetRootPart(target)
-            
-            if rootPart and rootPart.Parent then
-                local humPos, onScreen = camera:WorldToViewportPoint(rootPart.Position)
-                
-                if onScreen then
-                    if settings.Tracers then
-
-                        if settings.Tracer_FollowMouse then
-                            library.tracer.From = Vector2.new(mouse.X, mouse.Y + 36)
-                            library.blacktracer.From = Vector2.new(mouse.X, mouse.Y + 36)
-                        elseif settings.Tracer_Origin == "Middle" then
-                            library.tracer.From = camera.ViewportSize * 0.5
-                            library.blacktracer.From = camera.ViewportSize * 0.5
-                        else
-                            library.tracer.From = Vector2.new(camera.ViewportSize.X * 0.5, camera.ViewportSize.Y)
-                            library.blacktracer.From = Vector2.new(camera.ViewportSize.X * 0.5, camera.ViewportSize.Y)
-                        end
-                        
-                        library.tracer.To = Vector2.new(humPos.X, humPos.Y)
-                        library.blacktracer.To = Vector2.new(humPos.X, humPos.Y)
-                        
-                        library.tracer.Color = settings.Tracer_Color
-                        
-                        Visibility(true, library)
+            if onScreen then
+                if Settings.Tracers then
+                    -- Set origin
+                    if Settings.Tracer_FollowMouse then
+                        library.tracer.From = Vector2.new(mouse.X, mouse.Y + 36)
+                        library.blacktracer.From = Vector2.new(mouse.X, mouse.Y + 36)
+                    elseif Settings.Tracer_Origin == "Middle" then
+                        library.tracer.From = camera.ViewportSize * 0.5
+                        library.blacktracer.From = camera.ViewportSize * 0.5
                     else
-                        Visibility(false, library)
+                        library.tracer.From = Vector2.new(camera.ViewportSize.X * 0.5, camera.ViewportSize.Y)
+                        library.blacktracer.From = Vector2.new(camera.ViewportSize.X * 0.5, camera.ViewportSize.Y)
                     end
-                else
-                    Visibility(false, library)
+                    
+                    -- Set target
+                    library.tracer.To = Vector2.new(humPos.X, humPos.Y)
+                    library.blacktracer.To = Vector2.new(humPos.X, humPos.Y)
+                    
+                    library.tracer.Color = color or Settings.Tracer_Color
+                    
+                    Visibility(true, library)
                 end
             else
                 Visibility(false, library)
             end
-        end)
-    end
-    
-    local function updateSettings(newSettings)
-        for k, v in pairs(newSettings) do
-            if settings[k] ~= nil then
-                settings[k] = v
-            end
+        else
+            Visibility(false, library)
         end
-        library.tracer.Thickness = settings.Tracer_Thickness
-        library.blacktracer.Thickness = settings.Tracer_Thickness * 2
-        library.tracer.Color = settings.Tracer_Color
-    end
-    
-    local function destroy()
-        if connection then
-            connection:Disconnect()
-        end
-        for _, element in pairs(library) do
-            element:Remove()
-        end
-    end
-    
-    start()
+    end)
     
     return {
-        updateSettings = updateSettings,
-        destroy = destroy
+        destroy = function()
+            if connection then
+                connection:Disconnect()
+            end
+            for _, element in pairs(library) do
+                element:Remove()
+            end
+        end
     }
 end
 
