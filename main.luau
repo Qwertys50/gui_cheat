@@ -269,7 +269,7 @@ function module.create_starter(parent)
 	create_UISize(500, mainFrame)
 	create_UIRadio(1.706, mainFrame)
 	
-	local notificationContainer = CreateFrame(game.Players.LocalPlayer.PlayerGui.ScreenGui)
+	local notificationContainer = CreateFrame(parent)
 	notificationContainer.Name = "NotificationContainer"
 	notificationContainer.Position = UDim2.new(1, -210, 0, 10)
 	notificationContainer.Size = UDim2.new(0, 210, 1, -20)
