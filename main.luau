@@ -706,7 +706,7 @@ function module.create_vib(name_par, name_sel, all_vib, parent, size_ps, is_enab
 
 	local scrollFrame = CreateScrollFrame("VibScroller", container)
 	scrollFrame.Position = UDim2.new(0.02, 0, 0.485, 0)
-	scrollFrame.Size = UDim2.new(0.96, 0, 0.417 + size_ps, 0)
+	scrollFrame.Size = UDim2.new(0.96, 0, 0.5, 0)
 	scrollFrame.Visible = false
 	scrollFrame.ZIndex = 10
 	scrollFrame.ScrollBarThickness = 12
