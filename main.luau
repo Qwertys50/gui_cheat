@@ -1,4 +1,5 @@
 local module = {}
+local tweenService = game:GetService("TweenService")
 
 local function create_UITextSize(max: number, min: number, parent)
 	local constraint = Instance.new("UITextSizeConstraint", parent)
@@ -58,9 +59,9 @@ local function CreateImageButton(frame)
 	btn.BorderSizePixel = 0
 	btn.BackgroundColor3 = Color3.new(1, 1, 1)
 	btn.AutoButtonColor = false
-	
+
 	btn.Image = "rbxassetid://94540935178190"
-	
+
 	return btn
 end
 
@@ -115,6 +116,11 @@ local function CreateMainContainer(parent, size, position)
 	return frame
 end
 
+local function create_UITextSizeConstraint(maxSize, parent)
+	local stroke = Instance.new("UITextSizeConstraint", parent)
+	stroke.MaxTextSize = maxSize
+end
+
 local function createAssetButton(frame, is_enable)
 	local btn = CreateButton(frame)
 	btn.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
@@ -165,12 +171,111 @@ local function createAsseVibButton(frame)
 	return btn
 end
 
+local activeNotifications = {}
+local NOTIFICATION_SPACING = 15
+local NOTIFICATION_HEIGHT = 50
+
+local function updateNotificationsPosition()
+	local yOffset = 0
+
+	for i = #activeNotifications, 1, -1 do
+		local notification = activeNotifications[i]
+		local targetY = yOffset
+
+		local tween = tweenService:Create(notification, 
+			TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
+			{Position = UDim2.new(0, 0, 0, targetY)}
+		)
+		tween:Play()
+
+		yOffset = yOffset + NOTIFICATION_HEIGHT + NOTIFICATION_SPACING
+	end
+end
+
+local function removeNotification(notification)
+
+	for i, notif in ipairs(activeNotifications) do
+		if notif == notification then
+			table.remove(activeNotifications, i)
+			break
+		end
+	end
+
+	local tween = tweenService:Create(notification, 
+		TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
+		{
+			Position = UDim2.new(0, notification.AbsoluteSize.X + 20, 0, notification.AbsolutePosition.Y - notification.Parent.AbsolutePosition.Y),
+			BackgroundTransparency = 1
+		}
+	)
+
+	tween.Completed:Connect(function()
+		notification:Destroy()
+		updateNotificationsPosition()
+	end)
+
+	tween:Play()
+end
+
+function module.createNotification(text, parent)
+	local frame = CreateFrame(parent)
+	create_UICorner(UDim.new(0, 4), frame)
+	frame.Size = UDim2.new(0, 200, 0, NOTIFICATION_HEIGHT)
+	frame.BackgroundTransparency = 0.1
+	frame.Position = UDim2.new(0, 210, 0, 0)
+
+	create_UIStroke(1, frame)
+	frame.UIStroke.Color = Color3.new(1, 1, 1)
+	frame.UIStroke.Transparency = 0.7
+
+	local textLabel = CreateTextLabel(frame)
+	textLabel.Text = text
+	textLabel.Size = UDim2.new(1, -20, 1, 0)
+	textLabel.Position = UDim2.new(0, 10, 0, 0)
+	textLabel.RichText = true
+	textLabel.TextScaled = true
+	textLabel.TextColor3 = Color3.new(0, 0, 0)
+	textLabel.TextXAlignment = Enum.TextXAlignment.Left
+	create_UITextSizeConstraint(18, textLabel)
+
+	table.insert(activeNotifications, 1, frame)
+
+	local appearTween = tweenService:Create(frame, 
+		TweenInfo.new(0.5, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out), 
+		{Position = UDim2.new(0, 0, 0, 0)}
+	)
+	appearTween:Play()
+
+	updateNotificationsPosition()
+
+	task.delay(5, function()
+		if frame and frame.Parent then
+			removeNotification(frame)
+		end
+	end)
+
+	frame.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			removeNotification(frame)
+		end
+	end)
+
+	return frame
+end
+
 function module.create_starter(parent)
 	local mainFrame = CreateMainContainer(parent)
 	create_UICorner(UDim.new(0, 8), mainFrame)
 	create_UISize(500, mainFrame)
 	create_UIRadio(1.706, mainFrame)
-
+	
+	local notificationContainer = CreateFrame(game.Players.LocalPlayer.PlayerGui.ScreenGui)
+	notificationContainer.Name = "NotificationContainer"
+	notificationContainer.Position = UDim2.new(1, -210, 0, 10)
+	notificationContainer.Size = UDim2.new(0, 210, 1, -20)
+	notificationContainer.BackgroundTransparency = 1
+	notificationContainer.ClipsDescendants = false
+	
 	local scrollFrame = CreateScrollFrame("ScrollingFrame", mainFrame, true)
 	scrollFrame.Position = UDim2.new(0.016293, 0, 0.045296, 0)
 	scrollFrame.Size = UDim2.new(0.967413, 0, 0.905923, 0)
@@ -182,7 +287,7 @@ function module.create_starter(parent)
 	resize.Visible = false
 	create_UICorner(UDim.new(0, 8), resize)
 
-	
+
 	local homeFrame = CreateFrame(mainFrame)
 	homeFrame.BackgroundTransparency = 1
 	homeFrame.Position = UDim2.new(0.016293, 0, 0.045296, 0)
@@ -233,7 +338,7 @@ function module.create_starter(parent)
 		end
 	end)
 
-	return mainFrame, homeFrame, scrollFrame, {Main = scrollFrame, Home = homeFrame}, navBar
+	return mainFrame, homeFrame, scrollFrame, {Main = scrollFrame, Home = homeFrame}, navBar, notificationContainer
 end
 
 function module.createClosed(parent, home:Frame)
@@ -697,7 +802,7 @@ end
 
 function module.create_vib(name_par, name_sel, all_vib, parent, size_ps, is_enable, vib_, color_, is_toogle: false)
 
-    local new_Size = 0
+	local new_Size = 0
 
 	local vibs = {}
 	local container = CreateFrame(parent)
@@ -736,7 +841,7 @@ function module.create_vib(name_par, name_sel, all_vib, parent, size_ps, is_enab
 		label.Size = UDim2.new(0.360294, 0, 0.617647, 0)
 		label.Text = name
 		label.TextScaled = true
-        new_Size += 29
+		new_Size += 29
 
 		table.insert(vibs, item)
 	end
@@ -769,19 +874,19 @@ function module.create_vib(name_par, name_sel, all_vib, parent, size_ps, is_enab
 	title.TextScaled = true
 	title.TextXAlignment = Enum.TextXAlignment.Left
 
-    local mainBtn
+	local mainBtn
 
-    if not is_toogle then
+	if not is_toogle then
 
-        mainBtn = createAssetButton(container, is_enable)
-        mainBtn.Position = UDim2.new(0.85, 0, 0, 20)
-        mainBtn.AnchorPoint = Vector2.new(0, 0.5)
-    else
-            
-        mainBtn = createAsseVibButton(container)
-        mainBtn.Position = UDim2.new(0.85, 0, 0, 20)
-        mainBtn.AnchorPoint = Vector2.new(0, 0.5)
-    end
+		mainBtn = createAssetButton(container, is_enable)
+		mainBtn.Position = UDim2.new(0.85, 0, 0, 20)
+		mainBtn.AnchorPoint = Vector2.new(0, 0.5)
+	else
+
+		mainBtn = createAsseVibButton(container)
+		mainBtn.Position = UDim2.new(0.85, 0, 0, 20)
+		mainBtn.AnchorPoint = Vector2.new(0, 0.5)
+	end
 	return vibs, mainBtn
 end
 
