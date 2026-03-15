@@ -696,17 +696,19 @@ end
 
 
 function module.create_vib(name_par, name_sel, all_vib, parent, size_ps, is_enable, vib_, color_, is_toogle: false)
+
+    local new_Size = 0
+
 	local vibs = {}
 	local container = CreateFrame(parent)
 	container.AnchorPoint = Vector2.new(0, 0.5)
 	container.Position = UDim2.new(0.057430, 0, 0.113133, 0)
-	container.Size = UDim2.new(0.885, 0, 0, 96)
+	container.Size = UDim2.new(0.885, 0, 0, 70)
 
 	create_UICorner(UDim.new(0, 8), container)
 
 	local scrollFrame = CreateScrollFrame("VibScroller", container)
-	scrollFrame.Position = UDim2.new(0.02, 0, 0.485, 0)
-	scrollFrame.Size = UDim2.new(0.96, 0, 0.5, 0)
+	scrollFrame.Position = UDim2.new(0.02, 0, 0, 70)
 	scrollFrame.Visible = false
 	scrollFrame.ZIndex = 10
 	scrollFrame.ScrollBarThickness = 12
@@ -734,9 +736,12 @@ function module.create_vib(name_par, name_sel, all_vib, parent, size_ps, is_enab
 		label.Size = UDim2.new(0.360294, 0, 0.617647, 0)
 		label.Text = name
 		label.TextScaled = true
+        new_Size += 29
 
 		table.insert(vibs, item)
 	end
+
+	scrollFrame.Size = UDim2.new(0.96, 0, 0, new_Size + 10)
 
 	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, scrollFrame.UIListLayout.AbsoluteContentSize.Y)
 
@@ -751,8 +756,9 @@ function module.create_vib(name_par, name_sel, all_vib, parent, size_ps, is_enab
 
 	toggleBtn.MouseButton1Up:Connect(function()
 		local isOpen = toggleBtn.Text ~= name_sel
+
 		scrollFrame.Visible = not isOpen
-		container.Size = UDim2.new(0.885, 0, 0, isOpen and 70 or 140 + size_ps)
+		container.Size = UDim2.new(0.885, 0, 0, isOpen and 70 or 70 + scrollFrame.AbsoluteSize.Y)
 		toggleBtn.Text = isOpen and name_sel or "Close"
 	end)
 
