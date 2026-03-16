@@ -359,7 +359,6 @@ function module.createClosed(parent, home:Frame)
 
 	home:GetPropertyChangedSignal("AbsolutePosition"):Connect(function()
 		if not dragging then
-			print(home.AbsolutePosition.X)
 			btn.Position = UDim2.new(0, home.AbsolutePosition.X + 3, 0, home.AbsolutePosition.Y + 3)
 		end
 	end)
@@ -922,15 +921,20 @@ function module.CreateInputButton(parent, buttons_info)
 		btn.AutoButtonColor = false
 		btn.Position = UDim2.new(0, 0, 0, new_Size+5)
 		btn.Size = UDim2.new(0.85, 0, 0, 32)
+		btn.TextScaled = true
 
 		local textBTN = CreateTextLabel(container)
 		textBTN.Size = UDim2.new(0.1, 0, 0, 32)
 		textBTN.Text = "["..i.Code.Name.."]"
 		textBTN.Position = UDim2.new(0.9, 0, 0, new_Size+5)
-
+		textBTN.TextScaled = true
+		
 		textBTN.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
 		textBTN.BackgroundTransparency = 0
 
+		create_UITextSize(14, 1, btn)
+		create_UITextSize(14, 1, textBTN)
+		
 		new_Size += btn.AbsoluteSize.Y + 5
 
 		textBTN.InputBegan:Connect(function(input)
