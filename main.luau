@@ -1,4 +1,9 @@
 local module = {}
+local UserInputService = game:GetService("UserInputService")
+
+local all_inputes = {}
+local bindingFor
+
 local tweenService = game:GetService("TweenService")
 
 local function create_UITextSize(max: number, min: number, parent)
@@ -265,17 +270,16 @@ end
 
 function module.create_starter(parent)
 	local mainFrame = CreateMainContainer(parent)
-	create_UICorner(UDim.new(0, 8), mainFrame)
 	create_UISize(500, mainFrame)
 	create_UIRadio(1.706, mainFrame)
-	
+
 	local notificationContainer = CreateFrame(parent)
 	notificationContainer.Name = "NotificationContainer"
 	notificationContainer.Position = UDim2.new(1, -210, 0, 10)
 	notificationContainer.Size = UDim2.new(0, 210, 1, -20)
 	notificationContainer.BackgroundTransparency = 1
 	notificationContainer.ClipsDescendants = false
-	
+
 	local scrollFrame = CreateScrollFrame("ScrollingFrame", mainFrame, true)
 	scrollFrame.Position = UDim2.new(0.016293, 0, 0.045296, 0)
 	scrollFrame.Size = UDim2.new(0.967413, 0, 0.905923, 0)
@@ -285,7 +289,6 @@ function module.create_starter(parent)
 	resize.Size = UDim2.new(0.967413, 0, 0.905923, 0)
 	resize.Name = "Resize"
 	resize.Visible = false
-	create_UICorner(UDim.new(0, 8), resize)
 
 
 	local homeFrame = CreateFrame(mainFrame)
@@ -341,12 +344,12 @@ function module.create_starter(parent)
 	return mainFrame, homeFrame, scrollFrame, {Main = scrollFrame, Home = homeFrame}, navBar, notificationContainer
 end
 
+
 function module.createClosed(parent, home:Frame)
 
 	local btn = CreateImageButton(parent)
 	btn.Size = UDim2.new(0, 45, 0, 45)
 	btn.Position = UDim2.new(0, home.AbsolutePosition.X + 3, 0, home.AbsolutePosition.Y + 3)
-	create_UICorner(UDim.new(0, 8), btn)
 
 	local dragging = false
 	local dragInput = nil
@@ -889,5 +892,144 @@ function module.create_vib(name_par, name_sel, all_vib, parent, size_ps, is_enab
 	end
 	return vibs, mainBtn
 end
+
+local all_inputes = {}
+local bindingFor = nil
+local waitingForKey = false
+
+function module.CreateInputButton(parent, buttons_info)
+
+	local new_Size = 0
+	
+	local container = CreateFrame(parent)
+	container.AnchorPoint = Vector2.new(0, 0.5)
+	container.Position = UDim2.new(0.057430, 0, 0.113133, 0)
+	container.Size = UDim2.new(0.885, 0, 0, 70)
+	
+	local this_events = {}
+
+	local event = Instance.new("BindableEvent", container)
+
+	for _, i in buttons_info do
+		
+
+		local btn = CreateButton(container)
+		btn.Text = i.Name.." ["..i.Code.Name.."]"
+		
+		if new_Size == 0 then new_Size = -5 end
+
+		btn.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+		btn.AutoButtonColor = false
+		btn.Position = UDim2.new(0, 0, 0, new_Size+5)
+		btn.Size = UDim2.new(0.85, 0, 0, 32)
+
+		local textBTN = CreateTextLabel(container)
+		textBTN.Size = UDim2.new(0.1, 0, 0, 32)
+		textBTN.Text = "["..i.Code.Name.."]"
+		textBTN.Position = UDim2.new(0.9, 0, 0, new_Size+5)
+
+		textBTN.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+		textBTN.BackgroundTransparency = 0
+
+		new_Size += btn.AbsoluteSize.Y + 5
+
+		textBTN.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+				if bindingFor and bindingFor ~= textBTN then
+					for _, info in all_inputes do
+						if info.Btn == bindingFor then
+							bindingFor.Text = "[" .. info.Code.Name .. "]"
+							bindingFor.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+							break
+						end
+					end
+				end
+
+				bindingFor = textBTN
+				waitingForKey = true
+				textBTN.Text = "[...]"
+				textBTN.BackgroundColor3 = Color3.fromRGB(100, 93, 93)
+			end
+		end)
+		
+		table.insert(all_inputes, {["Code"] = i.Code, ["Btn"] = textBTN, ["Btn2"]=btn, ["Name"] = i.Name, ["Event"] = event, ["NameEvent"]=i.NameEvent})
+		
+		btn.MouseButton1Click:Connect(function()
+			event:Fire(i.NameEvent)
+		end)
+
+	end
+	container.Size = UDim2.new(0.885, 0, 0, new_Size + 10)
+	
+	return event
+end
+
+UserInputService.InputBegan:Connect(function(input, gp)
+
+	if waitingForKey and bindingFor then
+		if input.KeyCode ~= Enum.KeyCode.Unknown then
+			if input.KeyCode == Enum.KeyCode.Escape then
+
+				for _, info in all_inputes do
+					if info.Btn == bindingFor then
+						bindingFor.Text = "[" .. info.Code.Name .. "]"
+						bindingFor.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+						
+						info.Btn2.Text = info.Name.." ["..info.Code.Name.."]"
+						break
+					end
+				end
+			else
+
+				local prevKey = input.KeyCode
+
+				local keyTaken = false
+				for _, info in all_inputes do
+					if info.Code == prevKey and info.Btn ~= bindingFor then
+						keyTaken = true
+						break
+					end
+				end
+
+				if keyTaken then
+
+					bindingFor.Text = "[BUSY]"
+					task.wait(0.4)
+
+					for _, info in all_inputes do
+						if info.Btn == bindingFor then
+							bindingFor.Text = "[" .. info.Code.Name .. "]"
+							bindingFor.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+							break
+						end
+					end
+				else
+
+					for _, info in all_inputes do
+						if info.Btn == bindingFor then
+							info.Code = prevKey
+							bindingFor.Text = "[" .. prevKey.Name .. "]"
+							bindingFor.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+							
+							info.Btn2.Text = info.Name.." ["..info.Code.Name.."]"
+							break
+						end
+					end
+				end
+			end
+
+			waitingForKey = false
+			bindingFor = nil
+		end
+		return
+	end
+
+	for _, info in all_inputes do
+		if input.KeyCode == info.Code then
+			info.Event:Fire(info.NameEvent)
+		end
+	end
+end)
 
 return module
