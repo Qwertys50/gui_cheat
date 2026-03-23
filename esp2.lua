@@ -11,7 +11,8 @@ local DefaultConfig = {
 	showTracer = true,
 	maxDistance = 3000000,
 	tracerOrigin = "bottom",
-	autoScaleUI = true 
+	autoScaleUI = true,
+	customName = nil -- 🔥 кастомное имя
 }
 
 local ESPInstances = {}
@@ -24,8 +25,8 @@ local function GetPrimaryPart(model)
 	end
 end
 
-local function GetModelName(model)
-	return model.Name or "Unknown"
+local function GetModelName(model, customName)
+	return customName or model.Name or "Unknown"
 end
 
 local function GetUIScale(baseSize)
@@ -37,19 +38,10 @@ end
 
 local function GetScaledScreenPos(worldPos)
 	local screenPos, onScreen = Camera:WorldToScreenPoint(worldPos)
-	
 	if not onScreen then
 		return nil, false
 	end
-	
 	return Vector2.new(screenPos.X, screenPos.Y), true
-end
-
-local function GetMousePositionViewport()
-	local mousePos = UserInputService:GetMouseLocation()
-	
-	local viewport = Camera.ViewportSize
-	return mousePos
 end
 
 -- Main ESP creation function
@@ -92,7 +84,13 @@ local function CreateESP(model, options)
 				self.DistanceText = nil
 			end
 			self.Active = false
-			ESPInstances[model] = nil
+			ESPInstances[self.Model] = nil
+		end,
+		
+		_hideAll = function(self)
+			if self.TracerLine then self.TracerLine.Visible = false end
+			if self.NameText then self.NameText.Visible = false end
+			if self.DistanceText then self.DistanceText.Visible = false end
 		end,
 		
 		update = function(self)
@@ -119,6 +117,7 @@ local function CreateESP(model, options)
 				return
 			end
 			
+			-- Tracer
 			if self.Config.showTracer then
 				if not self.TracerLine then
 					self.TracerLine = Drawing.new("Line")
@@ -147,13 +146,14 @@ local function CreateESP(model, options)
 				self.TracerLine.Transparency = 0.7
 			end
 			
+			-- Name (с кастомным именем)
 			if self.Config.showName then
 				if not self.NameText then
 					self.NameText = Drawing.new("Text")
 				end
 				
 				self.NameText.Visible = true
-				self.NameText.Text = GetModelName(self.Model)
+				self.NameText.Text = GetModelName(self.Model, self.Config.customName)
 				self.NameText.Position = Vector2.new(screenPos.X, screenPos.Y - 25)
 				
 				local textSize = self.Config.textSize
@@ -169,6 +169,7 @@ local function CreateESP(model, options)
 				self.NameText.Transparency = 1
 			end
 			
+			-- Distance
 			if self.Config.showDistance then
 				if not self.DistanceText then
 					self.DistanceText = Drawing.new("Text")
@@ -178,7 +179,6 @@ local function CreateESP(model, options)
 				self.DistanceText.Text = string.format("%.0f", distance) .. "s"
 				self.DistanceText.Position = Vector2.new(screenPos.X, screenPos.Y + 15)
 				
-				-- Auto-scale text size if enabled
 				local textSize = self.Config.textSize - 2
 				if self.Config.autoScaleUI then
 					textSize = GetUIScale(self.Config.textSize - 2)
@@ -193,14 +193,20 @@ local function CreateESP(model, options)
 			end
 		end,
 		
-		_hideAll = function(self)
-			if self.TracerLine then self.TracerLine.Visible = false end
-			if self.NameText then self.NameText.Visible = false end
-			if self.DistanceText then self.DistanceText.Visible = false end
-		end,
-		
 		setColor = function(self, color)
 			self.Config.color = color
+		end,
+		
+		-- изменение настроек
+		Change = function(self, newOptions)
+			if not self.Active then return end
+			if not newOptions then return end
+			
+			for key, value in pairs(newOptions) do
+				if self.Config[key] ~= nil then
+					self.Config[key] = value
+				end
+			end
 		end
 	}
 	
