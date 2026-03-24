@@ -1,3 +1,4 @@
+local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
 local UserInputService = game:GetService("UserInputService")
@@ -12,7 +13,7 @@ local DefaultConfig = {
 	maxDistance = 3000000,
 	tracerOrigin = "bottom",
 	autoScaleUI = true,
-	customName = nil -- 🔥 кастомное имя
+	customName = nil
 }
 
 local ESPInstances = {}
@@ -44,18 +45,24 @@ local function GetScaledScreenPos(worldPos)
 	return Vector2.new(screenPos.X, screenPos.Y), true
 end
 
--- Main ESP creation function
 local function CreateESP(model, options)
 	options = options or {}
-	
-	local config = {}
-	for key, value in pairs(DefaultConfig) do
-		config[key] = options[key] or value
-	end
 	
 	if not model then
 		warn("CreateESP: Model is nil")
 		return nil
+	end
+	
+	print("CreateESP: Creating ESP for", model:GetFullName())
+	
+	local config = {}
+	
+	for key, value in pairs(DefaultConfig) do
+		config[key] = value
+	end
+	
+	for key, value in pairs(options) do
+		config[key] = value
 	end
 	
 	local esp = {
@@ -65,35 +72,37 @@ local function CreateESP(model, options)
 		NameText = nil,
 		DistanceText = nil,
 		Active = true,
-		
-		destroy = function(self)
-			self:_cleanup()
-		end,
-		
-		_cleanup = function(self)
-			if self.TracerLine then
-				pcall(function() self.TracerLine:Remove() end)
-				self.TracerLine = nil
-			end
-			if self.NameText then
-				pcall(function() self.NameText:Remove() end)
-				self.NameText = nil
-			end
-			if self.DistanceText then
-				pcall(function() self.DistanceText:Remove() end)
-				self.DistanceText = nil
-			end
-			self.Active = false
-			ESPInstances[self.Model] = nil
-		end,
-		
-		_hideAll = function(self)
-			if self.TracerLine then self.TracerLine.Visible = false end
-			if self.NameText then self.NameText.Visible = false end
-			if self.DistanceText then self.DistanceText.Visible = false end
-		end,
-		
-		update = function(self)
+	}
+	
+	function esp:destroy()
+		self:_cleanup()
+	end
+	
+	function esp:_cleanup()
+		print("cleanup called for", self.Model and self.Model.Name or "nil")
+		if self.TracerLine then
+			pcall(function() self.TracerLine:Remove() end)
+			self.TracerLine = nil
+		end
+		if self.NameText then
+			pcall(function() self.NameText:Remove() end)
+			self.NameText = nil
+		end
+		if self.DistanceText then
+			pcall(function() self.DistanceText:Remove() end)
+			self.DistanceText = nil
+		end
+		self.Active = false
+		ESPInstances[self.Model] = nil
+	end
+	
+	function esp:_hideAll()
+		if self.TracerLine then self.TracerLine.Visible = false end
+		if self.NameText then self.NameText.Visible = false end
+		if self.DistanceText then self.DistanceText.Visible = false end
+	end
+	
+	function esp:update()
 			if not self.Active then return end
 			if not self.Model or not self.Model.Parent then
 				self:_cleanup()
@@ -117,7 +126,6 @@ local function CreateESP(model, options)
 				return
 			end
 			
-			-- Tracer
 			if self.Config.showTracer then
 				if not self.TracerLine then
 					self.TracerLine = Drawing.new("Line")
@@ -146,30 +154,32 @@ local function CreateESP(model, options)
 				self.TracerLine.Transparency = 0.7
 			end
 			
-			-- Name (с кастомным именем)
-			if self.Config.showName then
-				if not self.NameText then
-					self.NameText = Drawing.new("Text")
-				end
-				
-				self.NameText.Visible = true
-				self.NameText.Text = GetModelName(self.Model, self.Config.customName)
-				self.NameText.Position = Vector2.new(screenPos.X, screenPos.Y - 25)
-				
-				local textSize = self.Config.textSize
-				if self.Config.autoScaleUI then
-					textSize = GetUIScale(self.Config.textSize)
-				end
-				
-				self.NameText.Size = textSize
-				self.NameText.Color = self.Config.color
-				self.NameText.Center = true
-				self.NameText.Outline = true
-				self.NameText.OutlineColor = Color3.fromRGB(0, 0, 0)
-				self.NameText.Transparency = 1
-			end
+            if self.Config.showName then
+                if not self.NameText then
+                    self.NameText = Drawing.new("Text")
+                else
+                    self.NameText.Text = ""
+                end
+                
+                local displayName = GetModelName(self.Model, self.Config.customName)
+
+                self.NameText.Visible = true
+                self.NameText.Text = displayName
+                self.NameText.Position = Vector2.new(screenPos.X, screenPos.Y - 25)
+                
+                local textSize = self.Config.textSize
+                if self.Config.autoScaleUI then
+                    textSize = GetUIScale(self.Config.textSize)
+                end
+                
+                self.NameText.Size = textSize
+                self.NameText.Color = self.Config.color
+                self.NameText.Center = true
+                self.NameText.Outline = true
+                self.NameText.OutlineColor = Color3.fromRGB(0, 0, 0)
+                self.NameText.Transparency = 1
+            end
 			
-			-- Distance
 			if self.Config.showDistance then
 				if not self.DistanceText then
 					self.DistanceText = Drawing.new("Text")
@@ -191,26 +201,28 @@ local function CreateESP(model, options)
 				self.DistanceText.OutlineColor = Color3.fromRGB(0, 0, 0)
 				self.DistanceText.Transparency = 1
 			end
-		end,
-		
-		setColor = function(self, color)
-			self.Config.color = color
-		end,
-		
-		-- изменение настроек
-		Change = function(self, newOptions)
-			if not self.Active then return end
-			if not newOptions then return end
-			
-			for key, value in pairs(newOptions) do
-				if self.Config[key] ~= nil then
-					self.Config[key] = value
-				end
+		end
+	
+	function esp:setColor(color)
+		self.Config.color = color
+	end
+	
+	function esp:Change(newOptions)
+		print("Change called with:", newOptions)
+		for key, value in pairs(newOptions) do
+			if self.Config[key] ~= nil then
+				self.Config[key] = value
 			end
 		end
-	}
+		
+		if newOptions.customName and self.NameText then
+			local displayName = GetModelName(self.Model, self.Config.customName)
+			self.NameText.Text = displayName
+		end
+	end
 	
 	ESPInstances[model] = esp
+	print("ESP created successfully:", esp) -- отладка
 	return esp
 end
 
@@ -228,6 +240,3 @@ local function ClearAllESP()
 	end
 	ESPInstances = {}
 end
-
-_G.CreateESP = CreateESP
-_G.ClearAllESP = ClearAllESP
