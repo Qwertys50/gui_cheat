@@ -111,122 +111,119 @@ local function CreateESP(model, options)
 		if self.DistanceText then self.DistanceText.Visible = false end
 	end
 	
-	function esp:update()
-		if not self.Active then return end
-		if not self.Model or not self.Model.Parent then
-			self:_cleanup()
-			return
-		end
-		
-		local primaryPart = GetPrimaryPart(self.Model)
-		if not primaryPart then return end
-		
-		-- Get the exact center position of the part/model
-		local worldPosition = primaryPart.Position
-		
-		-- If it's a model with multiple parts, try to get the center of the model
-		if self.Model:IsA("Model") and not primaryPart:IsA("HumanoidRootPart") then
-			-- Try to find the actual center of the model for better tracer alignment
-			local bounds = self.Model:GetExtentsSize()
-			if bounds and bounds.Magnitude > 0 then
-				-- Get the center of the model's bounding box
-				local centerOffset = self.Model:GetBoundingBox()
-				if centerOffset then
-					worldPosition = centerOffset
-				end
-			end
-		end
-		
-		local screenPos, onScreen = GetScaledScreenPos(worldPosition)
-		
-		if not onScreen or not screenPos then
-			self:_hideAll()
-			return
-		end
-		
-		local distance = (worldPosition - Camera.CFrame.Position).Magnitude
-		
-		if distance > self.Config.maxDistance then
-			self:_hideAll()
-			return
-		end
-		
-		if self.Config.showTracer then
-			if not self.TracerLine then
-				self.TracerLine = Drawing.new("Line")
-			end
-			
-			local viewportSize = Camera.ViewportSize
-			
-			local origin = Vector2.new(viewportSize.X / 2, viewportSize.Y)
-			if self.Config.tracerOrigin == "center" then
-				origin = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
-			elseif self.Config.tracerOrigin == "cursor" then
-				origin = UserInputService:GetMouseLocation()
-			end
-			
-			self.TracerLine.Visible = true
-			self.TracerLine.From = origin
-			self.TracerLine.To = screenPos  -- This now points exactly to the center position
-			self.TracerLine.Color = self.Config.color
-			
-			local thickness = self.Config.lineThickness
-			if self.Config.autoScaleUI then
-				thickness = GetUIScale(self.Config.lineThickness)
-			end
-			
-			self.TracerLine.Thickness = thickness
-			self.TracerLine.Transparency = 0.7
-		end
-		
-		if self.Config.showName then
-			if not self.NameText then
-				self.NameText = Drawing.new("Text")
-			else
-				self.NameText.Text = ""
-			end
-			
-			local displayName = GetModelName(self.Model, self.Config.customName)
-			
-			self.NameText.Visible = true
-			self.NameText.Text = displayName
-			self.NameText.Position = Vector2.new(screenPos.X, screenPos.Y - 25)
-			
-			local textSize = self.Config.textSize
-			if self.Config.autoScaleUI then
-				textSize = GetUIScale(self.Config.textSize)
-			end
-			
-			self.NameText.Size = textSize
-			self.NameText.Color = self.Config.color
-			self.NameText.Center = true
-			self.NameText.Outline = true
-			self.NameText.OutlineColor = Color3.fromRGB(0, 0, 0)
-			self.NameText.Transparency = 1
-		end
-		
-		if self.Config.showDistance then
-			if not self.DistanceText then
-				self.DistanceText = Drawing.new("Text")
-			end
-			
-			self.DistanceText.Visible = true
-			self.DistanceText.Text = string.format("%.0f", distance) .. "s"
-			self.DistanceText.Position = Vector2.new(screenPos.X, screenPos.Y + 15)
-			
-			local textSize = self.Config.textSize - 2
-			if self.Config.autoScaleUI then
-				textSize = GetUIScale(self.Config.textSize - 2)
-			end
-			
-			self.DistanceText.Size = textSize
-			self.DistanceText.Color = Color3.fromRGB(150, 150, 150)
-			self.DistanceText.Center = true
-			self.DistanceText.Outline = true
-			self.DistanceText.OutlineColor = Color3.fromRGB(0, 0, 0)
-			self.DistanceText.Transparency = 1
+function esp:update()
+	if not self.Active then return end
+	if not self.Model or not self.Model.Parent then
+		self:_cleanup()
+		return
+	end
+	
+	local primaryPart = GetPrimaryPart(self.Model)
+	if not primaryPart then return end
+	
+	-- Get the exact center position of the part/model
+	local worldPosition = primaryPart.Position
+	
+	-- If it's a model with multiple parts, try to get the center of the model
+	if self.Model:IsA("Model") and not primaryPart:IsA("HumanoidRootPart") then
+		-- Get the bounding box CFrame and size
+		local boundingBoxCFrame, boundingBoxSize = self.Model:GetBoundingBox()
+		if boundingBoxCFrame and boundingBoxSize then
+			-- The center position is the CFrame's position
+			worldPosition = boundingBoxCFrame.Position
 		end
 	end
+	
+	local screenPos, onScreen = GetScaledScreenPos(worldPosition)
+	
+	if not onScreen or not screenPos then
+		self:_hideAll()
+		return
+	end
+	
+	local distance = (worldPosition - Camera.CFrame.Position).Magnitude
+	
+	if distance > self.Config.maxDistance then
+		self:_hideAll()
+		return
+	end
+	
+	if self.Config.showTracer then
+		if not self.TracerLine then
+			self.TracerLine = Drawing.new("Line")
+		end
+		
+		local viewportSize = Camera.ViewportSize
+		
+		local origin = Vector2.new(viewportSize.X / 2, viewportSize.Y)
+		if self.Config.tracerOrigin == "center" then
+			origin = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
+		elseif self.Config.tracerOrigin == "cursor" then
+			origin = UserInputService:GetMouseLocation()
+		end
+		
+		self.TracerLine.Visible = true
+		self.TracerLine.From = origin
+		self.TracerLine.To = screenPos
+		self.TracerLine.Color = self.Config.color
+		
+		local thickness = self.Config.lineThickness
+		if self.Config.autoScaleUI then
+			thickness = GetUIScale(self.Config.lineThickness)
+		end
+		
+		self.TracerLine.Thickness = thickness
+		self.TracerLine.Transparency = 0.7
+	end
+	
+	if self.Config.showName then
+		if not self.NameText then
+			self.NameText = Drawing.new("Text")
+		else
+			self.NameText.Text = ""
+		end
+		
+		local displayName = GetModelName(self.Model, self.Config.customName)
+		
+		self.NameText.Visible = true
+		self.NameText.Text = displayName
+		self.NameText.Position = Vector2.new(screenPos.X, screenPos.Y - 25)
+		
+		local textSize = self.Config.textSize
+		if self.Config.autoScaleUI then
+			textSize = GetUIScale(self.Config.textSize)
+		end
+		
+		self.NameText.Size = textSize
+		self.NameText.Color = self.Config.color
+		self.NameText.Center = true
+		self.NameText.Outline = true
+		self.NameText.OutlineColor = Color3.fromRGB(0, 0, 0)
+		self.NameText.Transparency = 1
+	end
+	
+	if self.Config.showDistance then
+		if not self.DistanceText then
+			self.DistanceText = Drawing.new("Text")
+		end
+		
+		self.DistanceText.Visible = true
+		self.DistanceText.Text = string.format("%.0f", distance) .. "s"
+		self.DistanceText.Position = Vector2.new(screenPos.X, screenPos.Y + 15)
+		
+		local textSize = self.Config.textSize - 2
+		if self.Config.autoScaleUI then
+			textSize = GetUIScale(self.Config.textSize - 2)
+		end
+		
+		self.DistanceText.Size = textSize
+		self.DistanceText.Color = Color3.fromRGB(150, 150, 150)
+		self.DistanceText.Center = true
+		self.DistanceText.Outline = true
+		self.DistanceText.OutlineColor = Color3.fromRGB(0, 0, 0)
+		self.DistanceText.Transparency = 1
+	end
+end
 	
 	function esp:setColor(color)
 		self.Config.color = color
