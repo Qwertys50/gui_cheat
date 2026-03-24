@@ -240,3 +240,6 @@ local function ClearAllESP()
 	end
 	ESPInstances = {}
 end
+
+_G.ClearAllESP = ClearAllESP
+_G.CreateESP = CreateESP
