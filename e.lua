@@ -1,5 +1,5 @@
 -- ============================================================
---  Paradox Helper — Modular Core v2
+--  Paradox Helper — Modular Core v2 (FIXED)
 --  • No GUI, pure functions
 --  • Event-based notifications
 --  • Accepts boolean/number/string parameters
@@ -16,8 +16,16 @@ local rs                 = game:GetService("RunService")
 local player         = Players.LocalPlayer
 local playerName     = player.Name
 local character      = player.Character or player.CharacterAdded:Wait()
-local entitiesFolder = workspace:WaitForChild("Entities", 10) or workspace:FindFirstChild("Entities")
-local currentRooms   = workspace:WaitForChild("CurrentRooms", 10) or workspace:FindFirstChild("CurrentRooms")
+local entitiesFolder = workspace:FindFirstChild("Entities")
+local currentRooms   = workspace:FindFirstChild("CurrentRooms")
+
+-- Wait for important folders if needed
+if not entitiesFolder then
+    entitiesFolder = workspace:WaitForChild("Entities", 5)
+end
+if not currentRooms then
+    currentRooms = workspace:WaitForChild("CurrentRooms", 5)
+end
 
 -- ============================================================
 --  EVENT SYSTEM (instead of GUI notifications)
@@ -95,7 +103,11 @@ local espCategories = {
     },
     { Name = "HidingLockers", 
         IsMatch = function(n, item)
-            if not table.find(hidingLockerNames, n) then return false end
+            local found = false
+            for _, name in ipairs(hidingLockerNames) do
+                if n == name then found = true break end
+            end
+            if not found then return false end
             if item and not item:FindFirstChildWhichIsA("ProximityPrompt", true) then return false end
             return true
         end,
@@ -131,13 +143,23 @@ for _, cat in ipairs(espCategories) do
     categoryColors[cat.Name] = Color3.fromRGB(255, 0, 255)
 end
 
-local ESPLibrary
-pcall(function()
+-- FIXED: Load ESP library with proper error handling
+local ESPLibrary = nil
+local loadSuccess, loadError = pcall(function()
     ESPLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/mstudio45/MSESP/refs/heads/main/source.luau"))()
 end)
 
+if not loadSuccess or not ESPLibrary then
+    warn("Failed to load ESP library: " .. tostring(loadError))
+    -- Create a dummy ESPLibrary to prevent nil errors
+    ESPLibrary = {
+        Add = function() return { Show = function() end, Hide = function() end, Destroy = function() end, CurrentSettings = {} } end
+    }
+end
+
 -- Helper functions
 local function getCategoryForItem(item)
+    if not item then return nil end
     local itemName = item.Name
     for _, cat in ipairs(espCategories) do
         if cat.IsMatch then
@@ -163,12 +185,16 @@ local function refreshHighlights()
                 end
                 local displayName = item.Name
                 if catData and catData.FormatName then displayName = catData.FormatName(item.Name) end
-                espInst.CurrentSettings.FillColor = color
-                espInst.CurrentSettings.Tracer.Enabled = tracersEnabled and (tracerCategoryEnabled[catName] == true)
-                espInst.CurrentSettings.Name = showItemNames and string.format("[%s] %s", catName, displayName) or ""
-                espInst:Show()
+                if espInst.CurrentSettings then
+                    espInst.CurrentSettings.FillColor = color
+                    if espInst.CurrentSettings.Tracer then
+                        espInst.CurrentSettings.Tracer.Enabled = tracersEnabled and (tracerCategoryEnabled[catName] == true)
+                    end
+                    espInst.CurrentSettings.Name = showItemNames and string.format("[%s] %s", catName, displayName) or ""
+                end
+                pcall(function() espInst:Show() end)
             else
-                espInst:Hide()
+                pcall(function() espInst:Hide() end)
             end
         end
     end
@@ -179,13 +205,20 @@ local function refreshEntityHighlights()
     local globalEnable = masterEspEnabled and entityEspEnabled
     for ent, espInst in pairs(activeEntityESPInstances) do
         if ent and ent.Parent and espInst and not espInst.Deleted then
-            espInst.CurrentSettings.Tracer.Enabled = tracersEnabled and globalEnable
-            if globalEnable then espInst:Show() else espInst:Hide() end
+            if espInst.CurrentSettings and espInst.CurrentSettings.Tracer then
+                espInst.CurrentSettings.Tracer.Enabled = tracersEnabled and globalEnable
+            end
+            if globalEnable then 
+                pcall(function() espInst:Show() end)
+            else 
+                pcall(function() espInst:Hide() end)
+            end
         end
     end
 end
 
 local function processEspItem(item)
+    if not item or not item.Parent then return end
     local catName = getCategoryForItem(item)
     if not catName then return end
     if catName == "Doors" and (not item.Parent or tonumber(item.Parent.Name) == nil) then return end
@@ -217,12 +250,15 @@ local function processEspItem(item)
                 From = "Bottom",
             },
         })
-        activeESPInstances[item] = espInst
+        if espInst then
+            activeESPInstances[item] = espInst
+        end
     end
     refreshHighlights()
 end
 
 local function processEntityEsp(ent)
+    if not ent or not ent.Parent then return end
     if not activeEntityESPInstances[ent] and ESPLibrary then
         if table.find(flatEntityNames, ent.Name) then
             task.spawn(function()
@@ -245,8 +281,8 @@ local function processEntityEsp(ent)
                 sphere.Parent = ent
                 flatEntitySpheres[ent] = sphere
                 rs.Heartbeat:Connect(function()
-                    if not ent or not ent.Parent then return end
-                    sphere.CFrame = rootPart.CFrame
+                    if not ent or not ent.Parent or not sphere then return end
+                    pcall(function() sphere.CFrame = rootPart.CFrame end)
                 end)
             end)
         end
@@ -262,7 +298,9 @@ local function processEntityEsp(ent)
             Visible = masterEspEnabled and entityEspEnabled,
             Tracer = { Enabled = tracersEnabled, Color = Color3.fromRGB(255, 0, 0), Thickness = 2, Transparency = 0, From = "Bottom" },
         })
-        activeEntityESPInstances[ent] = espInst
+        if espInst then
+            activeEntityESPInstances[ent] = espInst
+        end
     end
     refreshEntityHighlights()
 end
@@ -304,11 +342,11 @@ end
 
 local function clearAllHighlights()
     for _, espInst in pairs(activeESPInstances) do
-        pcall(function() espInst:Destroy() end)
+        pcall(function() if espInst and espInst.Destroy then espInst:Destroy() end end)
     end
     table.clear(activeESPInstances)
     for _, espInst in pairs(activeEntityESPInstances) do
-        pcall(function() espInst:Destroy() end)
+        pcall(function() if espInst and espInst.Destroy then espInst:Destroy() end end)
     end
     table.clear(activeEntityESPInstances)
 end
@@ -520,12 +558,12 @@ local function doAutoLootAura()
     
     for _, prompt in ipairs(currentRooms:GetDescendants()) do
         if not autoLootEnabled then return end
-        if not prompt:IsA("ProximityPrompt") then continue end
-        if prompt:GetAttribute("PH_Looted") then continue end
+        if not prompt:IsA("ProximityPrompt") then goto continue end
+        if prompt:GetAttribute("PH_Looted") then goto continue end
         
         local part = prompt.Parent
-        if not (part and part:IsA("BasePart")) then continue end
-        if (part.Position - pos).Magnitude > 13 then continue end
+        if not (part and part:IsA("BasePart")) then goto continue end
+        if (part.Position - pos).Magnitude > 13 then goto continue end
         
         local item = part
         local catName = nil
@@ -535,14 +573,16 @@ local function doAutoLootAura()
             item = item.Parent
         end
         
-        if not catName or not autoLootCategories[catName] then continue end
-        if isShopItem(item) then continue end
+        if not catName or not autoLootCategories[catName] then goto continue end
+        if isShopItem(item) then goto continue end
         
         prompt:SetAttribute("PH_Looted", true)
         prompt.Enabled = true
         prompt.HoldDuration = 0
         prompt.MaxActivationDistance = 13
         pcall(function() fireproximityprompt(prompt) end)
+        
+        ::continue::
     end
 end
 
@@ -595,8 +635,7 @@ local antiEntityList = {}
 local antiEntityTargets = { Cue = true, Route = true, UnknownEntity = true, A200 = true, A60New = true }
 
 local houseData = {
-    -- Simplified house data (full version from original can be loaded separately)
-    Part = { Color = Color3.new(163, 162, 165), CFrame = CFrame.new(-45.5, 0.5, 10.16), Size = Vector3.new(30.36, 1, 25.72), Material = Enum.Material.Glass, Anchored = true, CanCollide = true }
+    Part = { Color = Color3.new(163/255, 162/255, 165/255), CFrame = CFrame.new(-45.5, 0.5, 10.16), Size = Vector3.new(30.36, 1, 25.72), Material = Enum.Material.Glass, Anchored = true, CanCollide = true }
 }
 
 local function buildHouse(targetCFrame)
@@ -619,6 +658,7 @@ local function buildHouse(targetCFrame)
 end
 
 local function saveFromEntity(entity)
+    if not entity then return end
     table.insert(antiEntityList, entity)
     if is_platform then return end
     is_platform = true
@@ -839,24 +879,27 @@ local function finishComputers()
     if not currentRooms then return false end
     local clientData = workspace:FindFirstChild("ClientData")
     local currentRoom = clientData and clientData:FindFirstChild("CurrentRoom")
-    if not currentRoom or not currentRoom.Value or currentRoom.Value.Name ~= "110" then
-        Notify("Wrong Room", "Not in room 110!", 3)
+    if not currentRoom or not currentRoom.Value or (currentRoom.Value.Name ~= "100" and currentRoom.Value.Name ~= "110") then
+        Notify("Wrong Room", "Not in room 100/110!", 3)
         return false
     end
-    local room110 = currentRooms:FindFirstChild("110")
-    if not room110 then return false end
-    local scriptables = room110:FindFirstChild("Scriptables")
+    local roomNum = currentRoom.Value.Name
+    local targetRoom = currentRooms:FindFirstChild(roomNum)
+    if not targetRoom then return false end
+    local scriptables = targetRoom:FindFirstChild("Scriptables")
     if not scriptables then return false end
     
     pcall(function()
-        local finishEvent = ReplicatedStorage:WaitForChild("Assets", 5):WaitForChild("Events", 5):WaitForChild("FinishDoor100Puzzle1", 5)
+        local finishEvent = ReplicatedStorage:FindFirstChild("Assets") and
+                            ReplicatedStorage.Assets:FindFirstChild("Events") and
+                            ReplicatedStorage.Assets.Events:FindFirstChild("FinishDoor100Puzzle1")
         if finishEvent then
             for _, computer in ipairs(scriptables:GetChildren()) do
                 finishEvent:FireServer(computer)
             end
         end
     end)
-    Notify("Computers", "Finished room 100 computers", 3)
+    Notify("Computers", "Finished room " .. roomNum .. " computers", 3)
     return true
 end
 
@@ -929,7 +972,8 @@ local function finishNest()
         hrp.CFrame = portal:GetPivot()
         Notify("Nest", "Teleported to portal", 3)
     end
-    return true end
+    return true 
+end
 
 local function seekChaseEnd()
     local nullZone = workspace:FindFirstChild("NullZone")
@@ -1041,16 +1085,20 @@ local function stopAntiSnare()
 end
 
 local function startAntiA90_A90B()
-    local playerGui = player:WaitForChild("PlayerGui")
-    for _, gui in ipairs(playerGui:GetChildren()) do
-        if gui.Name == "a90b" or gui.Name == "a90" then pcall(function() gui:Destroy() end) end
+    local playerGui = player:FindFirstChild("PlayerGui")
+    if playerGui then
+        for _, gui in ipairs(playerGui:GetChildren()) do
+            if gui.Name == "a90b" or gui.Name == "a90" then pcall(function() gui:Destroy() end) end
+        end
     end
     local lightingEffect = Lighting:FindFirstChild("a90bCc")
     if lightingEffect then pcall(function() lightingEffect:Destroy() end) end
     
-    guiConnection = playerGui.ChildAdded:Connect(function(child)
-        if child.Name == "a90b" or child.Name == "a90" then pcall(function() child:Destroy() end) end
-    end)
+    if playerGui then
+        guiConnection = playerGui.ChildAdded:Connect(function(child)
+            if child.Name == "a90b" or child.Name == "a90" then pcall(function() child:Destroy() end) end
+        end)
+    end
     Lighting.ChildAdded:Connect(function(child)
         if child.Name == "a90bCc" then pcall(function() child:Destroy() end) end
     end)
@@ -1122,12 +1170,13 @@ local function startInstantInteractLoop()
                 for _, prompt in ipairs(currentRooms:GetDescendants()) do
                     if not instantInteractEnabled then break end
                     if prompt:IsA("ProximityPrompt") then
-                        if prompt.Parent and prompt.Parent.Name == "LeftGascap" then continue end
+                        if prompt.Parent and prompt.Parent.Name == "LeftGascap" then goto continue end
                         local part = prompt.Parent
                         if part and part:IsA("BasePart") and (part.Position - pos).Magnitude <= 13 then
                             if prompt.HoldDuration ~= 0 then prompt.HoldDuration = 0 end
                         end
                     end
+                    ::continue::
                 end
             end
             task.wait(0.5)
