@@ -929,7 +929,7 @@ local function finishNest()
         hrp.CFrame = portal:GetPivot()
         Notify("Nest", "Teleported to portal", 3)
     end
-    return trueend
+    return true end
 
 local function seekChaseEnd()
     local nullZone = workspace:FindFirstChild("NullZone")
